@@ -35,7 +35,7 @@ class TGCustomYield:
 
     @staticmethod
     async def generate_file_properties(msg: Message):
-        """Live Telegram messages se fresh file properties decode karo"""
+        """Decode fresh file properties from a live Telegram message."""
         media       = msg.document or msg.video or msg.audio
         file_id_obj = FileId.decode(media.file_id)
         setattr(file_id_obj, "file_size", getattr(media, "file_size", 0))
@@ -138,7 +138,7 @@ async def root_route_handler(request):
 
 @routes.get("/watch/{message_id}")
 async def watch_handler(request):
-    """BIN_CHANNEL message ID se cinematic video player render karo"""
+    """Render a video player from a BIN_CHANNEL message ID."""
     try:
         message_id = int(request.match_info['message_id'])
         media_msg  = await temp.BOT.get_messages(BIN_CHANNEL, message_id)
@@ -177,7 +177,7 @@ async def watch_handler(request):
 
 @routes.get("/download/{message_id}")
 async def download_handler(request):
-    """Direct high-speed chunk streamer using BIN_CHANNEL fresh references"""
+    """Direct high-speed chunk streamer using fresh BIN_CHANNEL file references."""
     try:
         message_id = int(request.match_info['message_id'])
         media_msg  = await temp.BOT.get_messages(BIN_CHANNEL, message_id)
