@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class temp:
-    """बॉट के लाइव सेशन का स्टेट मैनेजर"""
+    """Live session state manager for the bot."""
     START_TIME = 0
     ME = None
     CANCEL = False
@@ -15,7 +15,7 @@ class temp:
 
 
 def get_size(size):
-    """फ़ाइल साइज को Bytes से KB, MB, GB में बदलने का तेज़ मेथड"""
+    """Convert file size from bytes to KB, MB, GB, etc."""
     units = ["Bytes", "KB", "MB", "GB", "TB"]
     size = float(size)
     i = 0
@@ -26,7 +26,7 @@ def get_size(size):
 
 
 def get_readable_time(seconds):
-    """बॉट के लाइव अपटाइम को पढ़ने योग्य बनाने का फंक्शन"""
+    """Convert seconds into a human-readable uptime string."""
     periods = [('d', 86400), ('h', 3600), ('m', 60), ('s', 1)]
     result = ''
     for period_name, period_seconds in periods:
@@ -37,19 +37,19 @@ def get_readable_time(seconds):
 
 
 def get_wish():
-    """समय के अनुसार एडमिन को विश करने का फंक्शन"""
+    """Return a time-based greeting for the admin."""
     tz = pytz.timezone('Asia/Kolkata')
     now = datetime.now(tz).strftime("%H")
     if now < "12":
-        return "ɢᴏᴏᴅ ᴍᴏʀɴɪɴɢ 🌞"
+        return "Good Morning 🌞"
     elif now < "18":
-        return "ɢᴏᴏᴅ ᴀꜰᴛᴇʀɴᴏᴏɴ 🌗"
+        return "Good Afternoon 🌗"
     else:
-        return "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
+        return "Good Evening 🌘"
 
 
 async def get_seconds(time_string):
-    """टाइम स्ट्रिंग (जैसे: 5m, 1h) को सेकंड्स में बदलने का फंक्शन"""
+    """Convert a time string (e.g. 5m, 1h) into seconds."""
     def extract_value_and_unit(ts):
         value = ""
         index = 0
