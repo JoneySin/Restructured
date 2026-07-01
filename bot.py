@@ -32,7 +32,7 @@ class Bot(Client):
         temp.START_TIME = time.time()
         await super().start()
 
-        # Handle post-restart notification
+        # Restart message handler
         if os.path.exists('restart.txt'):
             try:
                 with open("restart.txt") as f:
@@ -51,41 +51,41 @@ class Bot(Client):
         temp.U_NAME = me.username
         temp.B_NAME = me.first_name
 
-        print(f"Bot {me.first_name} started in Admin-Only mode!")
+        print(f"🔥 {me.first_name} Admin-Only Mode में स्टार्ट हो गया है!")
 
-        # Start aiohttp web server for streaming
+        # aiohttp web server start (streaming engine ke liye)
         web_app = web.Application()
         web_app.add_routes(routes)
         runner  = web.AppRunner(web_app)
         await runner.setup()
         await web.TCPSite(runner, "0.0.0.0", PORT).start()
-        print(f"Streaming web server active on port {PORT}")
+        print(f"🌐 Streaming Web Server port {PORT} पर active है!")
 
-        # Verify LOG_CHANNEL access
+        # Log channel verification
         try:
-            await self.send_message(chat_id=LOG_CHANNEL, text=f"<b>✅ {me.mention} restarted successfully! (Admin Only Mode)</b>")
+            await self.send_message(chat_id=LOG_CHANNEL, text=f"<b>✅ {me.mention} रीस्टार्ट हो गया है! (Admin Only Mode)</b>")
         except Exception:
-            print("Error - Check LOG_CHANNEL, bot must be admin there.")
+            print("Error - LOG_CHANNEL चेक करें, बॉट एडमिन होना जरूरी है।")
             exit()
 
-        # Verify BIN_CHANNEL access
+        # BIN_CHANNEL verification
         try:
-            m = await self.send_message(chat_id=BIN_CHANNEL, text="⚡ BIN CHANNEL TEST")
+            m = await self.send_message(chat_id=BIN_CHANNEL, text="⚡ ʙɪɴ ᴄʜᴀɴɴᴇʟ ᴛᴇsᴛ")
             await m.delete()
         except Exception:
-            print("Error - Check BIN_CHANNEL, bot must be admin there.")
+            print("Error - BIN_CHANNEL चेक करें, बॉट एडमिन होना जरूरी है।")
             exit()
 
-        # Send startup alert to all admins
+        # Admins ko startup alert
         for admin in ADMINS:
             try:
-                await self.send_message(chat_id=admin, text="<b>🔥 ✅ Bot restarted successfully!</b>")
+                await self.send_message(chat_id=admin, text="<b>🔥 ✅ बॉट सफलतापूर्वक रीस्टार्ट हो गया है!</b>")
             except Exception:
                 pass
 
     async def stop(self, *args):
         await super().stop()
-        print("Bot stopped. Goodbye!")
+        print("Bot Stopped! Bye...")
 
     async def iter_messages(
         self,
@@ -93,13 +93,13 @@ class Bot(Client):
         limit: int,
         offset: int = 0
     ) -> Optional[AsyncGenerator["types.Message", None]]:
-        """Optimized method to iterate messages for indexing."""
+        """Indexing ke liye messages iterate karne ka optimized method"""
         current = offset
         while True:
             new_diff = min(200, limit - current)
             if new_diff <= 0:
                 return
-            messages = await self.get_messages(chat_id, list(range(current, current + new_diff + 1)))
+            messages = await self.get_messages(chat_id, list(range(current, current + new_diff)))
             for message in messages:
                 yield message
                 current += 1
@@ -119,6 +119,6 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except FloodWait as vp:
-        print(f"Flood wait: sleeping for {get_readable_time(vp.value)}...")
+        print(f"Flood Wait: {get_readable_time(vp.value)} ke liye sleep kar rahe hain...")
         time.sleep(vp.value)
         asyncio.run(main())
