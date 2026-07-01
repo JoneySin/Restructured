@@ -1,28 +1,28 @@
-# 1. पाइथन का ऑफिशियल स्लिम (Slim) इमेज यूज़ करें ताकि इमेज का साइज छोटा रहे और डिप्लॉयमेंट फ़ास्ट हो
+# 1. Use the official Python slim image to keep image size small and deployment fast
 FROM python:3.11-slim
 
-# 2. आवश्यक सिस्टम टूल्स इंस्टॉल करें (C-एक्सटेंशन लाइब्रेरीज जैसे uvloop/orjson के लिए जरूरी है)
+# 2. Install required system tools (needed for C-extension libraries like uvloop/orjson)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. वर्किंग डायरेक्टरी सेट करें
+# 3. Set the working directory
 WORKDIR /Auto-Filter-Bot
 
-# 4. पाइथन एन्वायरमेंट वेरिएबल्स (Environment Variables) सेट करें
-# PYTHONDONTWRITEBYTECODE=1 -> कंटेनर में फालतू की .pyc फाइलें बनने से रोकता है (रैम और डिस्क स्पेस बचती है)
-# PYTHONUNBUFFERED=1 -> लॉग्स को तुरंत लाइव दिखाता है, कोई बफ़रिंग नहीं होती
+# 4. Set Python environment variables
+# PYTHONDONTWRITEBYTECODE=1 -> prevents unnecessary .pyc files in the container (saves RAM and disk space)
+# PYTHONUNBUFFERED=1 -> shows logs live and instantly, with no buffering
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# 5. पहले सिर्फ requirements.txt कॉपी करें (डॉकर लेयर कैशिंग का फायदा उठाने के लिए)
+# 5. Copy only requirements.txt first (to take advantage of Docker layer caching)
 COPY requirements.txt .
 
-# 6. डिपेंडेंसीज इंस्टॉल करें और पिप (pip) का कैश साफ़ करें ताकि कंटेनर का लोड कम रहे
+# 6. Install dependencies and clear pip's cache to keep the container lightweight
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 7. अब प्रोजेक्ट का बाकी सारा कोड कॉपी करें
+# 7. Now copy the rest of the project code
 COPY . .
 
-# 8. बोट को रन करने की कमांड
+# 8. Command to run the bot
 CMD ["python", "bot.py"]
