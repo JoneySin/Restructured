@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Fast Finder — Search</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e50914;--bg1:#000;--bg2:#111;--txt:#fff;--box:#141414;--box-bd:rgba(255,255,255,.1);--txt-muted:#b3b3b3;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(to bottom,var(--bg1),var(--bg2));font-family:'DM Sans',sans-serif;color:var(--txt);min-height:100vh;}
+.navbar{width:100%;padding:16px 4%;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(0,0,0,.9);backdrop-filter:blur(6px);z-index:10;}
+.logo{font-size:22px;font-weight:900;color:var(--red);display:flex;align-items:center;gap:8px;}
+.nf-icon{background:var(--red);color:#fff;padding:2px 7px;border-radius:3px;}
+.logout{color:var(--txt-muted);text-decoration:none;font-weight:700;font-size:13px;border:1px solid var(--box-bd);padding:8px 16px;border-radius:6px;}
+.logout:hover{color:var(--txt);border-color:var(--txt-muted);}
+.container{max-width:900px;margin:auto;padding:30px 20px 60px;}
+.search-box{width:100%;padding:14px 18px;border-radius:8px;border:1px solid var(--box-bd);background:var(--box);color:var(--txt);font-size:15px;outline:none;margin-bottom:20px;}
+.search-box:focus{border-color:var(--red);}
+.result{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--box);border:1px solid var(--box-bd);border-radius:8px;padding:14px 18px;margin-bottom:10px;}
+.result .name{font-weight:700;font-size:14px;word-break:break-word;}
+.result .size{color:var(--txt-muted);font-size:12px;margin-top:4px;}
+.actions{display:flex;gap:8px;flex-shrink:0;}
+.actions a{padding:9px 16px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700;}
+.watch{background:var(--red);color:#fff;}
+.dl{background:rgba(255,255,255,.08);color:var(--txt);border:1px solid var(--box-bd);}
+.empty{color:var(--txt-muted);text-align:center;padding:40px 0;}
+.more{display:block;margin:16px auto 0;padding:11px 26px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--box-bd);color:var(--txt);cursor:pointer;font-weight:700;}
+@media(max-width:600px){.result{flex-direction:column;align-items:flex-start;}.actions{width:100%;}.actions a{flex:1;text-align:center;}}
+</style>
+</head>
+<body>
+<div class="navbar">
+<div class="logo"><span class="nf-icon">F</span> FAST FINDER</div>
+<a href="/logout" class="logout">Logout</a>
+</div>
+<div class="container">
+<input type="text" id="search" class="search-box" placeholder="Search movies or files...">
+<div id="results"></div>
+<button id="more" class="more" style="display:none;">Load More</button>
+</div>
+<script>
+let query = '', offset = 0;
+const resultsEl = document.getElementById('results');
+const moreBtn = document.getElementById('more');
+let debounceTimer;
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+async function search(reset) {
+    if (reset) { offset = 0; resultsEl.innerHTML = ''; }
+    const res = await fetch(`/panel/api/search?q=${encodeURIComponent(query)}&offset=${offset}`);
+    const data = await res.json();
+
+    if (data.results.length === 0 && reset) {
+        resultsEl.innerHTML = '<div class="empty">No files found 🥲</div>';
+        moreBtn.style.display = 'none';
+        return;
+    }
+
+    for (const f of data.results) {
+        const div = document.createElement('div');
+        div.className = 'result';
+        div.innerHTML = `<div><div class="name">${esc(f.file_name)}</div><div class="size">${esc(f.file_size)}</div></div>
+        <div class="actions">
+        <a class="watch" href="/panel/stream/${encodeURIComponent(f.file_id)}?mode=watch" target="_blank">Watch</a>
+        <a class="dl" href="/panel/stream/${encodeURIComponent(f.file_id)}?mode=download">Download</a>
+        </div>`;
+        resultsEl.appendChild(div);
+    }
+
+    offset = data.next_offset;
+    moreBtn.style.display = data.next_offset === '' ? 'none' : 'block';
+}
+
+document.getElementById('search').addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    query = e.target.value;
+    debounceTimer = setTimeout(() => search(true), 400);
+});
+
+moreBtn.addEventListener('click', () => search(false));
+
+search(true);
+</script>
+</body></html>
