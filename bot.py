@@ -51,7 +51,7 @@ class Bot(Client):
         temp.U_NAME = me.username
         temp.B_NAME = me.first_name
 
-        print(f"🔥 {me.first_name} Admin-Only Mode में स्टार्ट हो गया है!")
+        print(f"🔥 {me.first_name} started in Admin-Only Mode!")
 
         # aiohttp web server start (streaming engine ke liye)
         web_app = web.Application()
@@ -59,13 +59,13 @@ class Bot(Client):
         runner  = web.AppRunner(web_app)
         await runner.setup()
         await web.TCPSite(runner, "0.0.0.0", PORT).start()
-        print(f"🌐 Streaming Web Server port {PORT} पर active है!")
+        print(f"🌐 Streaming Web Server active on port {PORT}!")
 
         # Log channel verification
         try:
-            await self.send_message(chat_id=LOG_CHANNEL, text=f"<b>✅ {me.mention} रीस्टार्ट हो गया है! (Admin Only Mode)</b>")
+            await self.send_message(chat_id=LOG_CHANNEL, text=f"<b>✅ {me.mention} has restarted! (Admin Only Mode)</b>")
         except Exception:
-            print("Error - LOG_CHANNEL चेक करें, बॉट एडमिन होना जरूरी है।")
+            print("Error - Check LOG_CHANNEL, the bot must be an admin.")
             exit()
 
         # BIN_CHANNEL verification
@@ -73,13 +73,13 @@ class Bot(Client):
             m = await self.send_message(chat_id=BIN_CHANNEL, text="⚡ ʙɪɴ ᴄʜᴀɴɴᴇʟ ᴛᴇsᴛ")
             await m.delete()
         except Exception:
-            print("Error - BIN_CHANNEL चेक करें, बॉट एडमिन होना जरूरी है।")
+            print("Error - Check BIN_CHANNEL, the bot must be an admin.")
             exit()
 
         # Admins ko startup alert
         for admin in ADMINS:
             try:
-                await self.send_message(chat_id=admin, text="<b>🔥 ✅ बॉट सफलतापूर्वक रीस्टार्ट हो गया है!</b>")
+                await self.send_message(chat_id=admin, text="<b>🔥 ✅ Bot has restarted successfully!</b>")
             except Exception:
                 pass
 
