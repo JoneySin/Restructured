@@ -9,9 +9,9 @@ from config import DATABASE_URL, DATABASE_NAME, COLLECTION_NAME, MAX_BTN
 
 # ==========================================
 # 🗄️ SINGLE SHARED MOTOR CLIENT
-# (पहले ia_filterdb + users_chats_db दोनों
-#  अलग-अलग AsyncIOMotorClient बनाते थे —
-#  अब एक ही connection पूरे project के लिए)
+# (previously ia_filterdb + users_chats_db each
+#  created a separate AsyncIOMotorClient —
+#  now a single shared connection for the whole project)
 # ==========================================
 
 _client = AsyncIOMotorClient(DATABASE_URL)
@@ -28,7 +28,7 @@ bot_col = _db["bot_id"]          # Bot settings collection
 # ==========================================
 
 async def ensure_indexes():
-    """बॉट स्टार्ट होते ही MongoDB में indexing फास्ट करने के लिए index सुनिश्चित करें"""
+    """Ensure indexes exist so MongoDB indexing/search stays fast as soon as the bot starts"""
     try:
         await col.create_index([("file_name", "text"), ("caption", "text")])
         await col.create_index([("file_id", 1)])
@@ -37,7 +37,7 @@ async def ensure_indexes():
 
 
 class Media:
-    """File documents का clean wrapper"""
+    """Clean wrapper around file documents"""
     def __init__(self, data):
         self.file_id   = data.get('_id')
         self.file_name = data.get('file_name')
@@ -54,7 +54,7 @@ class Media:
 
 
 async def save_file(media):
-    """डेटाबेस में फ़ाइल सेव करें"""
+    """Save a file into the database"""
     file_id   = unpack_new_file_id(media.file_id)
     file_name = re.sub(r"@\w+|([_\-\.+])", " ", str(media.file_name))
     file_cap  = re.sub(r"@\w+|([_\-\.+])", " ", str(media.caption)) if media.caption else ""
@@ -78,7 +78,7 @@ async def save_file(media):
 
 
 async def get_search_results(query, max_results=MAX_BTN, offset=0):
-    """MongoDB level पर pagination और fast searching"""
+    """Pagination and fast searching at the MongoDB level"""
     query = str(query).strip()
 
     if not query:
@@ -99,7 +99,7 @@ async def get_search_results(query, max_results=MAX_BTN, offset=0):
 
 
 async def delete_files(query):
-    """Query के आधार पर files ढूँढें (delete confirmation के लिए)"""
+    """Find files matching a query (used for delete confirmation)"""
     query = query.strip()
     if not query:
         filter_dict = {}
@@ -114,7 +114,7 @@ async def delete_files(query):
 
 
 async def get_file_details(query):
-    """File ID के आधार पर single file विवरण निकालें"""
+    """Fetch a single file's details by its File ID"""
     files_data = await col.find({'_id': query}).to_list(length=1)
     return [Media(d) for d in files_data]
 
@@ -151,7 +151,7 @@ def unpack_new_file_id(new_file_id):
 # ==========================================
 
 class Database:
-    """Users और bot settings के लिए DB wrapper"""
+    """DB wrapper for users and bot settings"""
 
     async def add_user(self, id, name):
         if not await self.is_user_exist(id):
@@ -182,19 +182,6 @@ class Database:
         await bot_col.update_one(
             {'id': int(bot_id)},
             {'$set': {'bot_pm_search': enable}},
-            upsert=True
-        )
-
-    async def get_group_search_status(self, bot_id):
-        bot = await bot_col.find_one({'id': bot_id})
-        if bot and "bot_group_search" in bot:
-            return bot['bot_group_search']
-        return True
-
-    async def update_group_search_status(self, bot_id, enable):
-        await bot_col.update_one(
-            {'id': int(bot_id)},
-            {'$set': {'bot_group_search': enable}},
             upsert=True
         )
 
