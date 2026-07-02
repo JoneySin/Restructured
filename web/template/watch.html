@@ -68,6 +68,7 @@ html.light .skip-ripple{{background:rgba(0,0,0,.1);}}
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 <!--THEME_SCRIPT-->
 
+<script>
 const player=new Plyr('#player',{{controls:['play-large','play','progress','current-time','mute','settings','pip','fullscreen'],settings:['quality','speed'],autoplay:!1,doubleClick:{{togglesFullscreen:!1}}}});
 
 player.on('enterfullscreen', ()=>{{
