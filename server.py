@@ -19,6 +19,13 @@ from web_auth import login_required, check_credentials, create_session_token, SE
 routes = web.RouteTableDef()
 
 
+async def inject_theme_script(html: str) -> str:
+    """Sabhi web pages (watch/login/panel) me shared theme-toggle script inject karo"""
+    async with aiofiles.open('web/template/theme_script.html', mode='r', encoding='utf-8') as r:
+        theme_script = await r.read()
+    return html.replace('<!--THEME_SCRIPT-->', theme_script)
+
+
 # ==========================================
 # 🚀 CORE STREAMING & CHUNK YIELDER ENGINE
 # ==========================================
@@ -132,10 +139,28 @@ class TGCustomYield:
 
 @routes.get("/", allow_head=True)
 async def root_route_handler(request):
-    return web.Response(
-        text='<h1 align="center"><b>🚀 High-Performance Stream Server Active</b></h1>',
-        content_type='text/html'
-    )
+    html = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Fast Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e50914;--bg1:#000;--bg2:#111;--txt:#fff;--box-bd:rgba(255,255,255,.1);--txt-muted:#b3b3b3;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:linear-gradient(to bottom,var(--bg1),var(--bg2));font-family:'DM Sans',sans-serif;color:var(--txt);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;}
+.logo{font-size:28px;font-weight:900;color:var(--red);display:flex;align-items:center;gap:8px;margin-bottom:18px;}
+.nf-icon{background:var(--red);color:#fff;padding:2px 8px;border-radius:4px;}
+h1{font-size:18px;font-weight:700;color:var(--txt-muted);margin-bottom:30px;}
+.login-btn{padding:13px 34px;border-radius:6px;background:var(--red);color:#fff;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 0 18px rgba(229,9,20,.35);transition:.25s;}
+.login-btn:hover{background:#ff1a1a;transform:translateY(-2px);}
+</style>
+</head>
+<body>
+<div class="logo"><span class="nf-icon">F</span> FAST FINDER</div>
+<h1>🚀 High-Performance Stream Server Active</h1>
+<a href="/login" class="login-btn">Admin Login</a>
+</body></html>"""
+    return web.Response(text=html, content_type='text/html')
 
 
 @routes.get("/watch/{message_id}")
@@ -168,6 +193,7 @@ async def watch_handler(request):
                 src=src,
                 mime_type=mime_type
             )
+            html = await inject_theme_script(html)
             return web.Response(text=html, content_type='text/html')
         else:
             return web.Response(
@@ -241,6 +267,7 @@ async def login_page(request):
     error = request.query.get('error', '')
     error_html = f'<div class="error">{error}</div>' if error else ''
     html = template_content.replace('<!--ERROR-->', error_html)
+    html = await inject_theme_script(html)
     return web.Response(text=html, content_type='text/html')
 
 
@@ -273,7 +300,8 @@ async def logout(request):
 async def panel_page(request):
     async with aiofiles.open('web/template/panel.html', mode='r', encoding='utf-8') as r:
         template_content = await r.read()
-    return web.Response(text=template_content, content_type='text/html')
+    html = await inject_theme_script(template_content)
+    return web.Response(text=html, content_type='text/html')
 
 
 @routes.get("/panel/api/search")
