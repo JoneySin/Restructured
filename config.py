@@ -178,15 +178,13 @@ No file found in the database with the keyword <code>{}</code>! 🥲
 
     ADMIN_COMMAND_TXT = """<b>🤖 Admin Commands List:</b>
 
+🔹 /start - Check live status of the bot
+🔹 /link - Reply to a file/video/audio to get watch & download links
+🔹 /search on - Turn ON search (in the current chat — PM or group)
+🔹 /search off - Turn OFF search (in the current chat — PM or group)
 🔹 /index_channels - Check indexed channels
 🔹 /stats - View live status of bot and database
 🔹 /delete - Delete files using a specific query
 🔹 /delete_all - Delete all indexed files from database
-🔹 /restart - Restart the bot
-🔹 /set_pm_search - Turn PM search on or off (on/off)"""
-
-    USER_COMMAND_TXT = """<b>🛠️ Configuration Commands:</b>
-
-🔹 /start - Check live status of the bot
-🔹 /set_caption - Set a custom file caption
+🔹 /ping - Check the bot's response speed
 🔹 /id - View your user ID or the ID of a replied message"""
