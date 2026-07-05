@@ -62,8 +62,7 @@ async def start(client, message):
     # Normal /start UI
     from config import script
     buttons = [
-        [InlineKeyboardButton("⚙️ Commands List", callback_data="help")],
-        [InlineKeyboardButton("🦹 About Us",       callback_data="about")]
+        [InlineKeyboardButton("⚙️ Commands List", callback_data="help")]
     ]
     await message.reply_photo(
         photo=random.choice(PICS),
@@ -190,6 +189,71 @@ async def ping(client, message):
 
 
 # ==========================================
+# 🔗 /link  COMMAND — reply to a file to get watch/download links
+# ==========================================
+
+@Client.on_message(filters.command('link') & filters.incoming)
+async def link_command(client, message):
+    if message.from_user.id not in ADMINS:
+        return
+
+    replied = message.reply_to_message
+    if not replied:
+        return await message.reply_text("<b>Kisi file/video par reply karke /link command bhejein! 📂</b>")
+
+    media = replied.document or replied.video or replied.audio
+    if not media:
+        return await message.reply_text("<b>Ye ek valid file, video ya audio nahi hai! ❌</b>")
+
+    sts = await message.reply_text("<b>Generating links... ⏱️</b>")
+    msg = await client.send_cached_media(chat_id=BIN_CHANNEL, file_id=media.file_id)
+
+    watch    = f"{URL}watch/{msg.id}"
+    download = f"{URL}download/{msg.id}"
+
+    btn = [[
+        InlineKeyboardButton("⚡ Watch Online", url=watch),
+        InlineKeyboardButton("🚀 Fast Download", url=download)
+    ], [
+        InlineKeyboardButton("🙅 Close", callback_data="close_data")
+    ]]
+    await sts.edit(
+        "<b>🔗 Links generated successfully!</b>",
+        reply_markup=InlineKeyboardMarkup(btn)
+    )
+
+
+# ==========================================
+# 🔍 /search on|off  COMMAND — group aur PM ke liye alag-alag
+# ==========================================
+
+@Client.on_message(filters.command('search') & filters.incoming)
+async def toggle_search(client, message):
+    if message.from_user.id not in ADMINS:
+        return
+
+    try:
+        mode = message.command[1].lower()
+    except IndexError:
+        return await message.reply_text("<b>Usage: <code>/search on</code> ya <code>/search off</code></b>")
+
+    if mode not in ('on', 'off'):
+        return await message.reply_text("<b>Usage: <code>/search on</code> ya <code>/search off</code></b>")
+
+    enable = mode == 'on'
+
+    if message.chat.type == enums.ChatType.PRIVATE:
+        await db.update_pm_search_status(temp.ME, enable)
+        scope = "PM"
+    else:
+        await db.update_group_search_status(message.chat.id, enable)
+        scope = "Group"
+
+    status = "ON ✅" if enable else "OFF ❌"
+    await message.reply_text(f"<b>{scope} search is now {status}</b>")
+
+
+# ==========================================
 # 🆔 /id  COMMAND
 # ==========================================
 
@@ -218,12 +282,21 @@ async def showid(client, message):
 
 
 # ==========================================
-# 🔍 PM SEARCH  (was pm_filter.py)
+# 🔍 PM + GROUP SEARCH  (was pm_filter.py)
 # ==========================================
 
-@Client.on_message(filters.private & filters.text & filters.incoming & ~filters.regex(r"^/"))
+@Client.on_message(filters.text & filters.incoming & ~filters.regex(r"^/"))
 async def pm_search(client, message):
     if message.from_user.id not in ADMINS:
+        return
+
+    if message.chat.type == enums.ChatType.PRIVATE:
+        if not await db.get_pm_search_status(temp.ME):
+            return
+    elif message.chat.type in (enums.ChatType.GROUP, enums.ChatType.SUPERGROUP):
+        if not await db.get_group_search_status(message.chat.id):
+            return
+    else:
         return
 
     search = message.text.strip()
@@ -349,3 +422,22 @@ async def cb_handler(client: Client, query: CallbackQuery):
     # --- Page indicator (no-op) ---
     elif data == "buttons":
         await query.answer("⚙️", show_alert=False)
+
+    # --- Commands List ---
+    elif data == "help":
+        from config import script
+        btn = [[
+            InlineKeyboardButton("🔙 Back", callback_data="start_back")
+        ], [
+            InlineKeyboardButton("🙅 Close", callback_data="close_data")
+        ]]
+        await query.message.edit_caption(caption=script.ADMIN_COMMAND_TXT, reply_markup=InlineKeyboardMarkup(btn))
+
+    # --- Back to /start ---
+    elif data == "start_back":
+        from config import script
+        btn = [[InlineKeyboardButton("⚙️ Commands List", callback_data="help")]]
+        await query.message.edit_caption(
+            caption=script.START_TXT.format(query.from_user.mention, get_wish()),
+            reply_markup=InlineKeyboardMarkup(btn)
+        )
