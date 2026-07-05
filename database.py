@@ -28,10 +28,14 @@ bot_col = _db["bot_id"]          # Bot settings collection
 # ==========================================
 
 async def ensure_indexes():
-    """Ensure indexes exist so MongoDB indexing/search stays fast as soon as the bot starts"""
+    """Ensure indexes exist so MongoDB search stays fast as soon as the bot starts.
+    Text index par $text query use hoti hai — regex COLLSCAN se kaafi fast hai,
+    khaaskar collection badi ho jaane par."""
     try:
-        await col.create_index([("file_name", "text"), ("caption", "text")])
-        await col.create_index([("file_id", 1)])
+        await col.create_index(
+            [("file_name", "text"), ("caption", "text")],
+            default_language="none"  # english stemming/stopwords off — Hindi/mixed titles ke liye zaroori
+        )
     except Exception as e:
         logging.error(f"Index Creation Error: {e}")
 
@@ -78,39 +82,61 @@ async def save_file(media):
 
 
 async def get_search_results(query, max_results=MAX_BTN, offset=0):
-    """Pagination and fast searching at the MongoDB level"""
+    """Fast, index-backed search (uses MongoDB $text index instead of full COLLSCAN regex)"""
     query = str(query).strip()
 
     if not query:
         filter_dict = {}
+        cursor = col.find(filter_dict).sort("$natural", -1).skip(offset).limit(max_results)
+        files_data = await cursor.to_list(length=max_results)
+        total = await col.count_documents(filter_dict)
     else:
-        keywords       = query.split()
-        regex_patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
-        filter_dict    = {"$and": [{"file_name": rx} for rx in regex_patterns]}
+        filter_dict = {"$text": {"$search": query}}
+        cursor = (
+            col.find(filter_dict, {"score": {"$meta": "textScore"}})
+               .sort([("score", {"$meta": "textScore"})])
+               .skip(offset)
+               .limit(max_results)
+        )
+        files_data = await cursor.to_list(length=max_results)
+        total = await col.count_documents(filter_dict)
 
-    cursor       = col.find(filter_dict).sort("$natural", -1).skip(offset).limit(max_results)
-    files_data   = await cursor.to_list(length=max_results)
-    files        = [Media(d) for d in files_data]
-    total        = await col.count_documents(filter_dict)
-    next_offset  = offset + max_results
+    files       = [Media(d) for d in files_data]
+    next_offset = offset + max_results
     if next_offset >= total:
         next_offset = ''
     return files, next_offset, total
 
 
-async def delete_files(query):
-    """Find files matching a query (used for delete confirmation)"""
+def _query_filter(query):
+    """Shared regex filter-builder for search/delete-preview/delete-confirm"""
     query = query.strip()
     if not query:
-        filter_dict = {}
-    else:
-        keywords       = query.split()
-        regex_patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
-        filter_dict    = {"$and": [{"file_name": rx} for rx in regex_patterns]}
+        return {}
+    keywords       = query.split()
+    regex_patterns = [re.compile(re.escape(kw), re.IGNORECASE) for kw in keywords]
+    return {"$and": [{"file_name": rx} for rx in regex_patterns]}
 
+
+async def delete_files(query):
+    """Find files matching a query (used for delete confirmation preview)"""
+    filter_dict = _query_filter(query)
     total = await col.count_documents(filter_dict)
     files = [Media(d) async for d in col.find(filter_dict)]
     return total, files
+
+
+async def delete_matching(query):
+    """Actually delete all files matching a query. Returns deleted count."""
+    filter_dict = _query_filter(query)
+    result = await col.delete_many(filter_dict)
+    return result.deleted_count
+
+
+async def delete_all_files():
+    """Actually wipe the entire Files collection. Returns deleted count."""
+    result = await col.delete_many({})
+    return result.deleted_count
 
 
 async def get_file_details(query):
