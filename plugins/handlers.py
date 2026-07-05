@@ -10,7 +10,10 @@ from config import (
     PICS, REACTIONS, BIN_CHANNEL, URL, MAX_BTN
 )
 from utils import get_size, temp, get_readable_time, get_wish
-from database import Media, get_file_details, delete_files, get_search_results, db
+from database import (
+    Media, get_file_details, delete_files, delete_matching,
+    delete_all_files, get_search_results, db
+)
 
 # PM search ke liye in-memory pagination state
 BUTTONS = {}
@@ -33,7 +36,7 @@ async def start(client, message):
     mc = message.command[1] if len(message.command) == 2 else None
 
     # Deep link — file delivery
-    if mc and (mc.startswith("file") or mc.startswith("all")):
+    if mc and mc.startswith("file"):
         try:
             _, file_id = mc.split("_", 1)
         except ValueError:
@@ -378,6 +381,30 @@ async def next_page(bot, query):
         reply_markup=InlineKeyboardMarkup(btn),
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML
+    )
+
+
+# ==========================================
+# 🗑️ DELETE CONFIRMATION CALLBACKS
+# ==========================================
+
+@Client.on_callback_query(filters.regex(r"^delete"))
+async def delete_cb(bot, query):
+    """/delete aur /delete_all ke 'Yes' confirm button ka actual handler"""
+    if query.from_user.id not in ADMINS:
+        return await query.answer("This is not for you! ❌", show_alert=True)
+
+    if query.data == "delete_all":
+        await query.message.edit("<b>Wiping entire database... ⏳</b>")
+        deleted = await delete_all_files()
+        await query.message.edit(f"<b>✅ Database wiped! {deleted} files deleted.</b>")
+        return
+
+    keyword = query.data.split("_", 1)[1]
+    await query.message.edit("<b>Deleting matching files... ⏳</b>")
+    deleted = await delete_matching(keyword)
+    await query.message.edit(
+        f"<b>✅ Deleted {deleted} file(s) matching:</b> <code>{keyword}</code>"
     )
 
 
