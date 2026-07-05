@@ -16,6 +16,7 @@ from aiohttp import web
 from server import routes
 from config import LOG_CHANNEL, API_ID, API_HASH, BOT_TOKEN, PORT, BIN_CHANNEL, ADMINS
 from utils import temp, get_readable_time
+from database import ensure_indexes
 
 
 class Bot(Client):
@@ -31,6 +32,7 @@ class Bot(Client):
     async def start(self):
         temp.START_TIME = time.time()
         await super().start()
+        await ensure_indexes()
 
         # Restart message handler
         if os.path.exists('restart.txt'):
