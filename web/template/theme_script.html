@@ -1,8 +1,7 @@
 <script>
-const docEl=document.documentElement, themeBtn=document.getElementById('theme-btn');
-if(localStorage.getItem('theme')==='light') docEl.classList.add('light');
+const themeBtn=document.getElementById('theme-btn');
 themeBtn.addEventListener('click',()=>{
-    let isLight = docEl.classList.toggle('light');
+    let isLight = document.documentElement.classList.toggle('light');
     localStorage.setItem('theme', isLight ? 'light' : 'dark');
 });
 </script>
