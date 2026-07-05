@@ -47,30 +47,3 @@ def get_wish():
     else:
         return "ɢᴏᴏᴅ ᴇᴠᴇɴɪɴɢ 🌘"
 
-
-async def get_seconds(time_string):
-    """Function to convert a time string (e.g. 5m, 1h) into seconds"""
-    def extract_value_and_unit(ts):
-        value = ""
-        index = 0
-        while index < len(ts) and ts[index].isdigit():
-            value += ts[index]
-            index += 1
-        unit = ts[index:].strip().lower()
-        return int(value) if value else 0, unit
-
-    value, unit = extract_value_and_unit(time_string)
-
-    if unit in ['s', 'sec', 'secs']:
-        return value
-    elif unit in ['min', 'mins', 'm']:
-        return value * 60
-    elif unit in ['hour', 'hours', 'h']:
-        return value * 3600
-    elif unit in ['day', 'days', 'd']:
-        return value * 86400
-    elif unit in ['month', 'months']:
-        return value * 86400 * 30
-    elif unit in ['year', 'years']:
-        return value * 86400 * 365
-    return 0
