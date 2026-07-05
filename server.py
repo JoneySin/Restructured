@@ -1,3 +1,4 @@
+import html
 import math
 import mimetypes
 import aiofiles
@@ -178,7 +179,7 @@ async def watch_handler(request):
 
         file_properties = await TGCustomYield.generate_file_properties(media_msg)
         file_name       = file_properties.file_name
-        src             = f"{URL}download/{message_id}"
+        src             = f"{URL}download/{message_id}?dl=0"
         mime_type       = file_properties.mime_type or 'video/mp4'
         tag             = mime_type.split('/')[0].strip()
 
@@ -186,7 +187,7 @@ async def watch_handler(request):
             async with aiofiles.open('web/template/watch.html', mode='r', encoding='utf-8') as r:
                 template_content = await r.read()
 
-            safe_name = file_name.replace("{", "{{").replace("}", "}}")
+            safe_name = html.escape(file_name).replace("{", "{{").replace("}", "}}")
             html = template_content.format(
                 heading=f"Watch - {safe_name}",
                 file_name=safe_name,
@@ -241,10 +242,15 @@ async def download_handler(request):
         mime_type      = file_properties.mime_type or 'application/octet-stream'
         safe_file_name = quote(file_properties.file_name)
 
+        # /watch page ka <video> player 'dl=0' ke saath is route ko hit karta hai,
+        # taaki chunk yahi rahe (inline) na ki forced download.
+        # Direct/manual download link (bina dl=0 ke) attachment ke roop me hi mile.
+        disposition = "inline" if request.query.get('dl') == '0' else "attachment"
+
         headers = {
             "Content-Type":        mime_type,
             "Content-Range":       f"bytes {from_bytes}-{until_bytes}/{file_size}",
-            "Content-Disposition": f'attachment; filename="{file_properties.file_name}"; filename*=UTF-8\'\'{safe_file_name}',
+            "Content-Disposition": f'{disposition}; filename="{file_properties.file_name}"; filename*=UTF-8\'\'{safe_file_name}',
             "Accept-Ranges":       "bytes",
         }
         return web.Response(
@@ -279,7 +285,10 @@ async def login_submit(request):
 
     if check_credentials(username, password):
         resp = web.HTTPFound("/panel")
-        resp.set_cookie("session", create_session_token(), max_age=SESSION_MAX_AGE, httponly=True)
+        resp.set_cookie(
+            "session", create_session_token(),
+            max_age=SESSION_MAX_AGE, httponly=True, samesite="Lax"
+        )
         return resp
     return web.HTTPFound("/login?error=Invalid username or password")
 
